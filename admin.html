@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - FF Tournaments</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #121212; --bg-card: #1e1e1e;
+            --admin-red: #ff3b3b; --admin-blue: #3b82f6; --text-main: #f3f4f6;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Rajdhani', sans-serif; }
+        body { background-color: var(--bg-dark); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
+        
+        h1, h2, h3 { font-family: 'Orbitron', sans-serif; }
+
+        /* Login Screen */
+        #admin-login { position: absolute; width: 100%; height: 100%; background: var(--bg-dark); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .login-box { background: var(--bg-card); padding: 40px; border-radius: 10px; text-align: center; width: 350px; border: 1px solid var(--admin-red); box-shadow: 0 0 20px rgba(255, 59, 59, 0.2); }
+        
+        /* Sidebar */
+        .sidebar { width: 250px; background: #0a0a0a; padding: 20px; display: flex; flex-direction: column; gap: 15px; border-right: 1px solid #333; }
+        .sidebar h2 { color: var(--admin-red); text-align: center; margin-bottom: 20px; }
+        .sidebar a { color: white; text-decoration: none; padding: 12px; border-radius: 5px; cursor: pointer; transition: 0.3s; font-size: 18px; }
+        .sidebar a:hover, .sidebar a.active { background: var(--admin-red); }
+
+        /* Main Content */
+        .main-content { flex: 1; padding: 30px; overflow-y: auto; }
+        .section { display: none; animation: fadeIn 0.4s; }
+        .active-section { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Cards & UI */
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 20px; }
+        .card { background: var(--bg-card); padding: 20px; border-radius: 8px; border: 1px solid #333; }
+        
+        input, select { width: 100%; padding: 10px; margin: 8px 0; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 5px; }
+        .btn { padding: 10px 15px; background: var(--admin-blue); color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 5px; }
+        .btn:hover { background: #2563eb; }
+        .btn-red { background: var(--admin-red); }
+        .btn-red:hover { background: #dc2626; }
+        .btn-green { background: #10b981; }
+        
+        /* Tables */
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: var(--bg-card); }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #333; }
+        th { background: #0a0a0a; color: var(--admin-red); }
+
+        #toast { position: fixed; bottom: 20px; right: 20px; background: #fff; color: #000; padding: 10px 20px; border-radius: 5px; font-weight: bold; display: none; z-index: 2000; }
+    </style>
+</head>
+<body>
+
+    <div id="admin-login">
+        <div class="login-box">
+            <h2 style="color: var(--admin-red); margin-bottom: 20px;">ADMIN ACCESS</h2>
+            <input type="email" id="admin-email" placeholder="Admin Email" value="ayan@gmail.com">
+            <input type="password" id="admin-pass" placeholder="Password">
+            <button class="btn btn-red" style="width: 100%;" onclick="adminLogin()">Login</button>
+        </div>
+    </div>
+
+    <div class="sidebar">
+        <h2>ADMIN PANEL</h2>
+        <a onclick="showAdminSection('dash-sec')" class="active">Dashboard</a>
+        <a onclick="showAdminSection('tourney-sec')">Manage Tournaments</a>
+        <a onclick="showAdminSection('dep-sec')">Deposit Requests</a>
+        <a onclick="showAdminSection('wit-sec')">Withdraw Requests</a>
+        <a onclick="showAdminSection('users-sec')">All Players</a>
+        <a onclick="adminLogout()" style="margin-top: auto; background: #333;">Logout</a>
+    </div>
+
+    <div class="main-content">
+        
+        <!-- Dashboard -->
+        <div id="dash-sec" class="section active-section">
+            <h2>System Overview</h2>
+            <div class="grid" style="margin-top: 20px;">
+                <div class="card" style="border-top: 3px solid var(--admin-blue);">
+                    <h3>Total Players</h3><h1 id="stat-players">0</h1>
+                </div>
+                <div class="card" style="border-top: 3px solid #10b981;">
+                    <h3>Active Tournaments</h3><h1 id="stat-tourneys">0</h1>
+                </div>
+                <div class="card" style="border-top: 3px solid #eab308;">
+                    <h3>Pending Deposits</h3><h1 id="stat-deposits">0</h1>
+                </div>
+                <div class="card" style="border-top: 3px solid var(--admin-red);">
+                    <h3>Pending Withdrawals</h3><h1 id="stat-withdraws">0</h1>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manage Tournaments -->
+        <div id="tourney-sec" class="section">
+            <h2>Create New Tournament</h2>
+            <div class="card grid" style="grid-template-columns: 1fr 1fr;">
+                <div>
+                    <input type="text" id="t-title" placeholder="Tournament Name">
+                    <input type="number" id="t-fee" placeholder="Entry Fee (₹)">
+                    <input type="number" id="t-prize" placeholder="Prize Pool (₹)">
+                </div>
+                <div>
+                    <input type="text" id="t-time" placeholder="Match Time (e.g. 9:00 PM)">
+                    <input type="text" id="t-map" placeholder="Map (e.g. Bermuda)">
+                    <button class="btn btn-green" style="width: 100%; margin-top: 15px;" onclick="addTournament()">Publish Tournament</button>
+                </div>
+            </div>
+
+            <h2 style="margin-top: 30px;">Active Tournaments (Set Room ID/Pass here)</h2>
+            <div id="admin-t-list"></div>
+        </div>
+
+        <!-- Deposits -->
+        <div id="dep-sec" class="section">
+            <h2>Pending Deposits</h2>
+            <table>
+                <thead><tr><th>Player Name</th><th>Amount</th><th>Trx ID</th><th>Action</th></tr></thead>
+                <tbody id="dep-table"></tbody>
+            </table>
+        </div>
+
+        <!-- Withdrawals -->
+        <div id="wit-sec" class="section">
+            <h2>Pending Withdrawals</h2>
+            <table>
+                <thead><tr><th>Player Name</th><th>Amount</th><th>EasyPaisa</th><th>Action</th></tr></thead>
+                <tbody id="wit-table"></tbody>
+            </table>
+        </div>
+
+        <!-- Users -->
+        <div id="users-sec" class="section">
+            <h2>Registered Players</h2>
+            <table>
+                <thead><tr><th>Name</th><th>UID</th><th>Game Name</th><th>Wallet</th><th>Action</th></tr></thead>
+                <tbody id="users-table"></tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <div id="toast">Message</div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getFirestore, collection, doc, getDoc, getDocs, updateDoc, addDoc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        // ==========================================
+        // COPY THE EXACT SAME CONFIG HERE AS INDEX.HTML
+        // ==========================================
+       const firebaseConfig = {
+  apiKey: "AIzaSyCSea3BQvwCcySrBhmu6WBz0IMB-xUpWyY",
+  authDomain: "studio-9443534360-c637d.firebaseapp.com",
+  projectId: "studio-9443534360-c637d",
+  storageBucket: "studio-9443534360-c637d.firebasestorage.app",
+  messagingSenderId: "124500097842",
+  appId: "1:124500097842:web:3c4ebf7225b8629564b52b"
+};
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const ADMIN_EMAIL = "ayan@gmail.com";
+
+        window.showToast = (msg) => {
+            const toast = document.getElementById("toast");
+            toast.innerText = msg; toast.style.display = "block";
+            setTimeout(() => toast.style.display = "none", 3000);
+        }
+
+        window.showAdminSection = (id) => {
+            document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active-section'));
+            document.getElementById(id).classList.add('active-section');
+            if(id === 'dash-sec') loadStats();
+            if(id === 'tourney-sec') loadAdminTournaments();
+            if(id === 'dep-sec') loadDeposits();
+            if(id === 'wit-sec') loadWithdraws();
+            if(id === 'users-sec') loadUsers();
+        }
+
+        // --- Admin Auth ---
+        onAuthStateChanged(auth, (user) => {
+            if (user && user.email === ADMIN_EMAIL) {
+                document.getElementById("admin-login").style.display = "none";
+                loadStats();
+            } else {
+                document.getElementById("admin-login").style.display = "flex";
+            }
+        });
+
+        window.adminLogin = async () => {
+            const email = document.getElementById("admin-email").value;
+            const pass = document.getElementById("admin-pass").value;
+            if (email !== ADMIN_EMAIL) return showToast("Unauthorized Email!");
+            try {
+                await signInWithEmailAndPassword(auth, email, pass);
+                showToast("Admin Logged In");
+            } catch (error) { showToast(error.message); }
+        }
+
+        window.adminLogout = () => signOut(auth);
+
+        // --- Dashboard Stats ---
+        const loadStats = async () => {
+            document.getElementById("stat-players").innerText = (await getDocs(collection(db, "users"))).size;
+            document.getElementById("stat-tourneys").innerText = (await getDocs(query(collection(db, "tournaments"), where("status", "==", "active")))).size;
+            document.getElementById("stat-deposits").innerText = (await getDocs(query(collection(db, "deposits"), where("status", "==", "pending")))).size;
+            document.getElementById("stat-withdraws").innerText = (await getDocs(query(collection(db, "withdrawals"), where("status", "==", "pending")))).size;
+        }
+
+        // --- Tournaments ---
+        window.addTournament = async () => {
+            const t = {
+                title: document.getElementById("t-title").value,
+                entryFee: Number(document.getElementById("t-fee").value),
+                prize: Number(document.getElementById("t-prize").value),
+                matchTime: document.getElementById("t-time").value,
+                map: document.getElementById("t-map").value,
+                roomId: "", roomPassword: "", status: "active"
+            };
+            if(!t.title || !t.entryFee) return showToast("Fill required fields");
+            
+            await addDoc(collection(db, "tournaments"), t);
+            showToast("Tournament Added");
+            loadAdminTournaments();
+        }
+
+        window.loadAdminTournaments = async () => {
+            const list = document.getElementById("admin-t-list");
+            list.innerHTML = "";
+            const snap = await getDocs(query(collection(db, "tournaments"), where("status", "==", "active")));
+            snap.forEach(doc => {
+                const t = doc.data();
+                list.innerHTML += `
+                    <div class="card" style="margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <h3 style="color: var(--admin-red);">${t.title}</h3>
+                            <p>Fee: ₹${t.entryFee} | Prize: ₹${t.prize}</p>
+                        </div>
+                        <div style="flex: 2; display: flex; gap: 10px;">
+                            <input type="text" id="rid-${doc.id}" placeholder="Room ID" value="${t.roomId}">
+                            <input type="text" id="rpass-${doc.id}" placeholder="Password" value="${t.roomPassword}">
+                            <button class="btn btn-green" onclick="updateRoom('${doc.id}')">Update</button>
+                            <button class="btn btn-red" onclick="deleteTournament('${doc.id}')">Delete</button>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        window.updateRoom = async (id) => {
+            const rid = document.getElementById(`rid-${id}`).value;
+            const rpass = document.getElementById(`rpass-${id}`).value;
+            await updateDoc(doc(db, "tournaments", id), { roomId: rid, roomPassword: rpass });
+            showToast("Room Info Updated");
+        }
+
+        window.deleteTournament = async (id) => {
+            if(confirm("Are you sure?")) {
+                await updateDoc(doc(db, "tournaments", id), { status: "deleted" });
+                loadAdminTournaments();
+            }
+        }
+
+        // --- Deposits ---
+        window.loadDeposits = async () => {
+            const tbody = document.getElementById("dep-table"); tbody.innerHTML = "";
+            const snap = await getDocs(query(collection(db, "deposits"), where("status", "==", "pending")));
+            snap.forEach(d => {
+                const data = d.data();
+                tbody.innerHTML += `<tr>
+                    <td>${data.playerName}</td><td>₹${data.amount}</td><td>${data.transactionId}</td>
+                    <td>
+                        <button class="btn btn-green" onclick="approveDeposit('${d.id}', '${data.userId}', ${data.amount})">Approve</button>
+                        <button class="btn btn-red" onclick="rejectDeposit('${d.id}')">Reject</button>
+                    </td>
+                </tr>`;
+            });
+        }
+
+        window.approveDeposit = async (depId, userId, amount) => {
+            const uRef = doc(db, "users", userId);
+            const userSnap = await getDoc(uRef);
+            if(userSn
