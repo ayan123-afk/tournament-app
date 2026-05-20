@@ -18,7 +18,7 @@
             --black-card: #222222;
             --white: #FFFFFF;
             --gray: #9CA3AF;
-            --gray-light: #D1D5DB;
+            --gray-light: #D1D5D9;
             --border: rgba(124, 58, 237, 0.2);
             --border-hover: rgba(124, 58, 237, 0.5);
             --glow: rgba(124, 58, 237, 0.4);
@@ -41,8 +41,9 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
             position: relative;
+            overflow-y: auto;
+            overflow-x: hidden;
         }
 
         /* Animated Background */
@@ -115,6 +116,7 @@
             position: relative;
             z-index: 1;
             margin: 20px;
+            min-height: 600px;
         }
 
         /* Left Panel - Brand */
@@ -210,6 +212,7 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
+            overflow-y: auto;
         }
 
         .form-header {
@@ -281,10 +284,6 @@
             background: rgba(34, 34, 34, 0.95);
         }
 
-        .input-group input:focus ~ .icon {
-            color: var(--purple-light);
-        }
-
         .input-group .toggle-password {
             position: absolute;
             right: 16px;
@@ -294,6 +293,9 @@
             cursor: pointer;
             transition: color 0.3s;
             z-index: 2;
+            background: none;
+            border: none;
+            font-size: 16px;
         }
 
         .input-group .toggle-password:hover {
@@ -306,6 +308,8 @@
             align-items: center;
             margin-bottom: 30px;
             font-size: 13px;
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         .remember {
@@ -447,25 +451,33 @@
 
         /* Responsive Design */
         @media (max-width: 768px) {
+            body {
+                align-items: flex-start;
+                padding: 0;
+            }
+            
             .login-wrapper {
                 flex-direction: column;
-                max-width: 450px;
+                max-width: 100%;
+                margin: 0;
+                border-radius: 0;
+                min-height: auto;
             }
             
             .login-brand {
-                padding: 40px 30px;
+                padding: 30px 20px;
                 border-right: none;
                 border-bottom: 1px solid var(--border);
             }
             
             .brand-logo {
-                width: 70px;
-                height: 70px;
-                margin-bottom: 20px;
+                width: 60px;
+                height: 60px;
+                margin-bottom: 15px;
             }
             
             .brand-title {
-                font-size: 24px;
+                font-size: 22px;
             }
             
             .brand-features {
@@ -473,30 +485,32 @@
             }
             
             .login-form-panel {
-                padding: 40px 30px;
+                padding: 30px 20px;
+                overflow-y: visible;
             }
             
             .form-header h2 {
-                font-size: 24px;
+                font-size: 22px;
+            }
+            
+            .form-header {
+                margin-bottom: 25px;
             }
         }
 
         @media (max-width: 480px) {
-            .login-wrapper {
-                margin: 10px;
-                border-radius: 16px;
-            }
-            
-            .login-brand {
-                padding: 30px 20px;
-            }
-            
             .login-form-panel {
-                padding: 30px 20px;
+                padding: 25px 16px;
             }
             
             .input-group input {
                 padding: 14px 14px 14px 42px;
+                font-size: 14px;
+            }
+            
+            .btn-submit {
+                padding: 14px;
+                font-size: 14px;
             }
         }
     </style>
@@ -564,7 +578,9 @@
                     <div class="input-group">
                         <i class="fas fa-lock icon"></i>
                         <input type="password" id="password" placeholder="Enter password" required autocomplete="current-password">
-                        <i class="fas fa-eye toggle-password" id="togglePassword" onclick="togglePasswordVisibility()"></i>
+                        <button type="button" class="toggle-password" id="togglePassword" onclick="togglePasswordVisibility()">
+                            <i class="fas fa-eye"></i>
+                        </button>
                     </div>
                 </div>
 
@@ -593,13 +609,11 @@
     </div>
 
     <script>
-        // API Configuration
         const API_URL = window.location.origin + '/api';
 
-        // Toggle Password Visibility
         function togglePasswordVisibility() {
             const passwordInput = document.getElementById('password');
-            const toggleIcon = document.getElementById('togglePassword');
+            const toggleIcon = document.querySelector('#togglePassword i');
             
             if (passwordInput.type === 'password') {
                 passwordInput.type = 'text';
@@ -612,7 +626,6 @@
             }
         }
 
-        // Form Submission
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -624,11 +637,9 @@
             const errorMessage = document.getElementById('errorMessage');
             const successAlert = document.getElementById('successAlert');
             
-            // Reset alerts
             errorAlert.style.display = 'none';
             successAlert.style.display = 'none';
             
-            // Validate
             if (!email || !password) {
                 showError('Please fill in all fields');
                 return;
@@ -639,41 +650,33 @@
                 return;
             }
             
-            // Loading state
             submitBtn.disabled = true;
             btnText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> LOGGING IN...';
             
             try {
                 const response = await fetch(`${API_URL}/auth/login`, {
                     method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
                 });
                 
                 const data = await response.json();
                 
                 if (response.ok) {
-                    // Success
                     localStorage.setItem('authToken', data.token);
                     localStorage.setItem('user', JSON.stringify(data.user));
                     
-                    // Remember me
                     if (document.getElementById('rememberMe').checked) {
                         localStorage.setItem('rememberedEmail', email);
                     }
                     
-                    // Show success
                     successAlert.style.display = 'block';
                     btnText.innerHTML = '<i class="fas fa-check"></i> SUCCESS!';
                     submitBtn.style.background = 'linear-gradient(135deg, #10B981, #059669)';
                     
-                    // Redirect
                     setTimeout(() => {
                         window.location.href = 'dashboard.html';
                     }, 1000);
-                    
                 } else {
                     showError(data.error || 'Invalid email or password');
                     submitBtn.disabled = false;
@@ -686,7 +689,6 @@
             }
         });
 
-        // Helper Functions
         function showError(message) {
             const errorAlert = document.getElementById('errorAlert');
             const errorMessage = document.getElementById('errorMessage');
@@ -698,8 +700,7 @@
         }
 
         function isValidEmail(email) {
-            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            return re.test(email);
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
         }
 
         // Load remembered email
@@ -708,12 +709,6 @@
             if (rememberedEmail) {
                 document.getElementById('email').value = rememberedEmail;
                 document.getElementById('rememberMe').checked = true;
-            }
-            
-            // Check if already logged in
-            const token = localStorage.getItem('authToken');
-            if (token) {
-                window.location.href = 'dashboard.html';
             }
         });
     </script>
